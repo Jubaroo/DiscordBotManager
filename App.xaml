@@ -1,0 +1,18 @@
+﻿<Application x:Class="DiscordBotManager.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+    <Application.Resources>
+        <!-- Theme brushes for light mode (overridden in code if dark mode) -->
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="White"/>
+        <SolidColorBrush x:Key="AppForegroundBrush" Color="Black"/>
+        <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFD3D3D3"/> <!-- light gray -->
+        <SolidColorBrush x:Key="ControlForegroundBrush" Color="Black"/>
+        <SolidColorBrush x:Key="BotNameBrush" Color="#FFCCCCCC"/>
+        <!-- Base style for buttons for consistent theming -->
+        <Style x:Key="BaseButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ControlForegroundBrush}"/>
+        </Style>
+    </Application.Resources>
+</Application>
