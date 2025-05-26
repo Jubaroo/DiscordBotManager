@@ -1,127 +1,152 @@
 ﻿<Window x:Class="DiscordBotManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:DiscordBotManager"
         Icon="pack://application:,,,/DiscordBotManager;component/app.ico"
         Title="Discord Bot Manager" Height="600" Width="800"
-        Background="{DynamicResource AppBackgroundBrush}" 
+        Background="{DynamicResource AppBackgroundBrush}"
         Foreground="{DynamicResource AppForegroundBrush}">
 
-  <!-- Define your custom brush for bot names -->
-  <Window.Resources>
-    <SolidColorBrush x:Key="BotNameBrush" Color="#FFCCCCCC"/>
-  </Window.Resources>
+    <!-- Define your custom brush for bot names -->
+    <Window.Resources>
+        <SolidColorBrush x:Key="BotNameBrush" Color="#FFCCCCCC" />
+    </Window.Resources>
 
-  <Grid>
-    <!-- Main layout: Top bar and 2-column content area -->
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>    <!-- Top controls -->
-      <RowDefinition Height="*"/>       <!-- Main content (list + logs) -->
-    </Grid.RowDefinitions>
+    <Grid>
+        <!-- Main layout: Top bar and 2-column content area -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />    <!-- Top controls -->
+            <RowDefinition Height="*" />       <!-- Main content (list + logs) -->
+        </Grid.RowDefinitions>
 
-    <!-- Top control bar -->
-    <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
-      <Button Content="Add Bot"
-              Style="{StaticResource BaseButtonStyle}"
-              Margin="0,0,5,0"
-              Padding="10,5"
-              Click="AddBot_Click"/>
-      <Button Content="Start All"
-              Style="{StaticResource BaseButtonStyle}"
-              Margin="0,0,5,0"
-              Padding="10,5"
-              Name="StartAllButton"
-              Click="StartAll_Click"/>
-      <Button Content="Stop All"
-              Style="{StaticResource BaseButtonStyle}"
-              Margin="0,0,5,0"
-              Padding="10,5"
-              Name="StopAllButton"
-              Click="StopAll_Click"/>
-    </StackPanel>
+        <!-- Top control bar -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
+            <Button Content="Add Bot"
+                    Style="{StaticResource BaseButtonStyle}"
+                    Margin="0,0,5,0"
+                    Padding="10,5"
+                    Click="AddBot_Click" />
+            <Button Content="Start All"
+                    Style="{StaticResource BaseButtonStyle}"
+                    Margin="0,0,5,0"
+                    Padding="10,5"
+                    Name="StartAllButton"
+                    Click="StartAll_Click" />
+            <Button Content="Stop All"
+                    Style="{StaticResource BaseButtonStyle}"
+                    Margin="0,0,5,0"
+                    Padding="10,5"
+                    Name="StopAllButton"
+                    Click="StopAll_Click" />
+            <Button Content="Restart All"
+                    Style="{StaticResource BaseButtonStyle}"
+                    Margin="0,0,5,0"
+                    Padding="10,5"
+                    Name="RestartAllButton"
+                    Click="RestartAll_Click" />
+        </StackPanel>
 
-    <!-- Main content area with left bot list and right log tabs -->
-    <Grid Grid.Row="1">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="250" MinWidth="150"/>   <!-- left panel width -->
-        <ColumnDefinition Width="5"/>                    <!-- splitter column -->
-        <ColumnDefinition Width="*"/>                    <!-- right panel -->
-      </Grid.ColumnDefinitions>
+        <!-- Main content area with left bot list and right log tabs -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" MinWidth="150" />   <!-- left panel width -->
+                <ColumnDefinition Width="5" />                    <!-- splitter column -->
+                <ColumnDefinition Width="*" />                    <!-- right panel -->
+            </Grid.ColumnDefinitions>
 
-      <!-- Bot list panel -->
-      <ScrollViewer Grid.Column="0"
-                    VerticalScrollBarVisibility="Auto">
-        <ListBox x:Name="BotList"
-                 ItemsSource="{Binding Bots}"
-                 Background="{DynamicResource AppBackgroundBrush}"
-                 BorderThickness="0"
-                 SelectionMode="Single">
-          <ListBox.ItemTemplate>
-            <DataTemplate DataType="{x:Type local:Bot}">
-              <!-- Each bot entry: Name, Start/Stop toggle, Remove button -->
-              <Grid Margin="5,2">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <!-- Bot list panel -->
+            <ScrollViewer Grid.Column="0"
+                          VerticalScrollBarVisibility="Auto">
+                <ListBox x:Name="BotList"
+                         ItemsSource="{Binding Bots}"
+                         Background="{DynamicResource AppBackgroundBrush}"
+                         BorderThickness="0"
+                         SelectionMode="Single">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:Bot}">
+                            <Grid Margin="5,2">
+                                <!-- 4 columns now: Name | Start/Stop | Restart | Remove -->
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                <!-- Bot name, using our custom brush -->
-                <TextBlock Grid.Column="0"
-                           Text="{Binding Name}"
-                           VerticalAlignment="Center"
-                           Margin="0,0,10,0"
-                           Foreground="{DynamicResource BotNameBrush}" />
+                                <!-- Bot name -->
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding Name}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"
+                                           Foreground="{DynamicResource BotNameBrush}" />
 
-                <!-- Start/Stop button -->
-                <Button Grid.Column="1"
-                        Click="BotStartStop_Click">
-                  <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
-                      <Setter Property="Content" Value="Start"/>
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                          <Setter Property="Content" Value="Stop"/>
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Button.Style>
-                </Button>
+                                <!-- Start / Stop -->
+                                <Button Grid.Column="1"
+                                        Click="BotStartStop_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+                                            <Setter Property="Content" Value="Start" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="Content" Value="Stop" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
 
-                <!-- Remove button -->
-                <Button Grid.Column="2"
-                        Click="BotRemove_Click">
-                  <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
-                      <Setter Property="Content" Value="Remove"/>
-                      <Setter Property="IsEnabled" Value="True"/>
-                      <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                          <Setter Property="IsEnabled" Value="False"/>
-                        </DataTrigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Button.Style>
-                </Button>
-              </Grid>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </ScrollViewer>
+                                <!-- Restart -->
+                                <Button Grid.Column="2"
+                                        Content="Restart"
+                                        Click="BotRestart_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                            <Style.Triggers>
+                                                <!-- only enabled when running -->
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="False">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
 
-      <!-- Vertical splitter between panels -->
-      <GridSplitter Grid.Column="1"
-                    Width="5"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Stretch"
-                    Background="{DynamicResource ControlForegroundBrush}"
-                    ShowsPreview="False"/>
+                                <!-- Remove -->
+                                <Button Grid.Column="3"
+                                        Content="Remove"
+                                        Click="BotRemove_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                            <Style.Triggers>
+                                                <!-- only enabled when stopped -->
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
 
-      <!-- Log tabs panel on the right -->
-      <TabControl x:Name="LogTabs"
-                  Grid.Column="2"
-                  Background="{DynamicResource ControlBackgroundBrush}"
-                  Foreground="{DynamicResource AppForegroundBrush}" />
+            <!-- Vertical splitter between panels -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource ControlForegroundBrush}"
+                          ShowsPreview="False" />
+
+            <!-- Log tabs panel on the right -->
+            <TabControl x:Name="LogTabs"
+                        Grid.Column="2"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        Foreground="{DynamicResource AppForegroundBrush}" />
+        </Grid>
     </Grid>
-  </Grid>
 </Window>

@@ -272,122 +272,122 @@ namespace DiscordBotManager {
         }
 
         // Launch the bot's Node.js process and start logging
-private void StartBot(Bot bot) {
-    // Only start if not already running
-    if (bot.IsRunning || bot.Process != null) return;
+        private void StartBot(Bot bot) {
+            // Only start if not already running
+            if (bot.IsRunning || bot.Process != null) return;
 
-    // Determine how to launch the bot: prefer index.js, else npm start
-    string indexPath = Path.Combine(bot.Path, "index.js");
-    ProcessStartInfo psi;
+            // Determine how to launch the bot: prefer index.js, else npm start
+            string indexPath = Path.Combine(bot.Path, "index.js");
+            ProcessStartInfo psi;
 
-    if (File.Exists(indexPath)) {
-        // Explicitly run index.js
-        psi = new ProcessStartInfo("node", "index.js") {
-            WorkingDirectory       = bot.Path,
-            UseShellExecute        = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            CreateNoWindow         = true
-        };
-    }
-    else if (File.Exists(Path.Combine(bot.Path, "package.json"))) {
-        // Fall back to npm start if package.json is present
-        psi = new ProcessStartInfo("npm", "start") {
-            WorkingDirectory       = bot.Path,
-            UseShellExecute        = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError  = true,
-            CreateNoWindow         = true
-        };
-    }
-    else {
-        // Neither index.js nor package.json found
-        bot.LogTextBox.AppendText($"[ERROR] No index.js or package.json in {bot.Path}\n");
-        return;
-    }
-
-    // Create and configure the process
-    Process proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
-
-    // Attach stdout handler
-    proc.OutputDataReceived += (s, e) =>
-    {
-        if (e.Data == null) return;
-        Dispatcher.Invoke(() =>
-            AppendAnsiText(bot.LogTextBox, e.Data + Environment.NewLine)
-        );
-    };
-
-    // Attach stderr handler
-    proc.ErrorDataReceived += (s, e) =>
-    {
-        if (e.Data == null) return;
-        Dispatcher.Invoke(() =>
-            AppendAnsiText(bot.LogTextBox, "[ERROR] " + e.Data + Environment.NewLine)
-        );
-    };
-
-    // Attach exit/restart handler
-    proc.Exited += (s, e) =>
-    {
-        Dispatcher.BeginInvoke((Action)(() =>
-        {
-            if (appClosing) return;
-
-            if (bot.isStopping)
-            {
-                // User requested stop
-                bot.isStopping = false;
-                bot.IsRunning = false;
-                AppendAnsiText(bot.LogTextBox, "[INFO] Bot process stopped by user." + Environment.NewLine);
+            if (File.Exists(indexPath)) {
+                // Explicitly run index.js
+                psi = new ProcessStartInfo("node", "index.js") {
+                    WorkingDirectory       = bot.Path,
+                    UseShellExecute        = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
+                    CreateNoWindow         = true
+                };
             }
-            else
-            {
-                // Unexpected crash → restart
-                int code = proc.ExitCode;
-                bot.IsRunning = false;
-                AppendAnsiText(bot.LogTextBox, $"[ERROR] Bot process exited (code {code}). Restarting...\n");
-                bot.LogTextBox.ScrollToEnd();
-
-                // 1) Clean up old process
-                proc.Dispose();
-                bot.Process = null;
-                UpdateGlobalButtons();
-
-                // 2) Now actually restart
-                StartBot(bot);
-
-                return; // exit early since we've already disposed
+            else if (File.Exists(Path.Combine(bot.Path, "package.json"))) {
+                // Fall back to npm start if package.json is present
+                psi = new ProcessStartInfo("npm", "start") {
+                    WorkingDirectory       = bot.Path,
+                    UseShellExecute        = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
+                    CreateNoWindow         = true
+                };
+            }
+            else {
+                // Neither index.js nor package.json found
+                bot.LogTextBox.AppendText($"[ERROR] No index.js or package.json in {bot.Path}\n");
+                return;
             }
 
-            // Common cleanup after a user-initiated stop
-            proc.Dispose();
-            bot.Process = null;
+            // Create and configure the process
+            Process proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+
+            // Attach stdout handler
+            proc.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data == null) return;
+                Dispatcher.Invoke(() =>
+                    AppendAnsiText(bot.LogTextBox, e.Data + Environment.NewLine)
+                );
+            };
+
+            // Attach stderr handler
+            proc.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data == null) return;
+                Dispatcher.Invoke(() =>
+                    AppendAnsiText(bot.LogTextBox, "[ERROR] " + e.Data + Environment.NewLine)
+                );
+            };
+
+            // Attach exit/restart handler
+            proc.Exited += (s, e) =>
+            {
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    if (appClosing) return;
+
+                    if (bot.isStopping)
+                    {
+                        // User requested stop
+                        bot.isStopping = false;
+                        bot.IsRunning = false;
+                        AppendAnsiText(bot.LogTextBox, "[INFO] Bot process stopped by user." + Environment.NewLine);
+                    }
+                    else
+                    {
+                        // Unexpected crash → restart
+                        int code = proc.ExitCode;
+                        bot.IsRunning = false;
+                        AppendAnsiText(bot.LogTextBox, $"[ERROR] Bot process exited (code {code}). Restarting...\n");
+                        bot.LogTextBox.ScrollToEnd();
+
+                        // 1) Clean up old process
+                        proc.Dispose();
+                        bot.Process = null;
+                        UpdateGlobalButtons();
+
+                        // 2) Now actually restart
+                        StartBot(bot);
+
+                        return; // exit early since we've already disposed
+                    }
+
+                    // Common cleanup after a user-initiated stop
+                    proc.Dispose();
+                    bot.Process = null;
+                    UpdateGlobalButtons();
+                }));
+            };
+
+            // Start the process
+            try {
+                proc.Start();
+            }
+            catch (Exception ex) {
+                bot.LogTextBox.AppendText("[ERROR] Failed to start bot process: " + ex.Message + "\n");
+                return;
+            }
+
+            // Begin reading streams
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+            bot.Process    = proc;
+            bot.isStopping = false;
+            bot.IsRunning  = true;
+
+            // Log and update UI
+            AppendAnsiText(bot.LogTextBox, "[INFO] Bot process started." + Environment.NewLine);
+            bot.LogTextBox.ScrollToEnd();
             UpdateGlobalButtons();
-        }));
-    };
-
-    // Start the process
-    try {
-        proc.Start();
-    }
-    catch (Exception ex) {
-        bot.LogTextBox.AppendText("[ERROR] Failed to start bot process: " + ex.Message + "\n");
-        return;
-    }
-
-    // Begin reading streams
-    proc.BeginOutputReadLine();
-    proc.BeginErrorReadLine();
-    bot.Process    = proc;
-    bot.isStopping = false;
-    bot.IsRunning  = true;
-
-    // Log and update UI
-    AppendAnsiText(bot.LogTextBox, "[INFO] Bot process started." + Environment.NewLine);
-    bot.LogTextBox.ScrollToEnd();
-    UpdateGlobalButtons();
-}
+        }
 
         private void AddBot_Click(object sender, RoutedEventArgs e)
         {
@@ -457,8 +457,56 @@ private void StartBot(Bot bot) {
             }
         }
 
+        // Restart a single bot: if it's running, kill without setting isStopping,
+        // so the Exited event will auto-restart it; if it's stopped, just Start it.
+        private void BotRestart_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is Bot bot)
+            {
+                if (bot.Process != null && !bot.Process.HasExited)
+                {
+                    // don't set bot.isStopping => Exited handler will call StartBot(bot)
+                    try { bot.Process.Kill(); }
+                    catch { /* ignore */ }
+                }
+                else
+                {
+                    // if not running, just start
+                    StartBot(bot);
+                }
+            }
+        }
+
+        // Restart all bots: for each running bot, kill it (will auto-restart);
+        // for each stopped bot, call StartBot immediately.
+        private void RestartAll_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var bot in bots)
+            {
+                if (bot.Process != null && !bot.Process.HasExited)
+                {
+                    try { bot.Process.Kill(); }
+                    catch { /* ignore */ }
+                }
+                else
+                {
+                    StartBot(bot);
+                }
+            }
+        }
+
         private void BotRemove_Click(object sender, RoutedEventArgs e) {
             if (sender is Button btn && btn.DataContext is Bot bot) {
+                // 1. Ask for confirmation
+                var message   = $"Are you sure you want to remove bot \"{bot.Name}\"?";
+                var caption   = "Confirm Remove Bot";
+                var buttons   = MessageBoxButton.YesNo;
+                var icon      = MessageBoxImage.Warning;
+                var result    = MessageBox.Show(message, caption, buttons, icon);
+
+                // 2. Only proceed if they clicked “Yes”
+                if (result != MessageBoxResult.Yes)
+                    return;
                 // Only remove if not running
                 if (bot.IsRunning) {
                     MessageBox.Show("Stop the bot before removing it.", "Cannot Remove");

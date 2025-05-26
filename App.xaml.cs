@@ -18,7 +18,10 @@ namespace DiscordBotManager
                 if (key?.GetValue("AppsUseLightTheme") is int v)
                     isLight = v > 0;
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
 
             if (!isLight)
             {
